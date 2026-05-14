@@ -1,0 +1,1865 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NXT — Gestor de Consorcios</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    /* ── NXT BRAND COLORS ── */
+    --bg-deep:      #120828;   /* fondo principal oscuro */
+    --bg-dark:      #1A0A3B;   /* fondo logo NXT */
+    --bg-card:      #1E1040;   /* cards sobre fondo oscuro */
+    --bg-card-2:    #261450;   /* cards más elevadas */
+    --bg-hover:     #2A1660;
+
+    --cyan:         #00D4FF;
+    --violet:       #8B5CF6;
+    --magenta:      #C084FC;
+    --pink:         #E040FB;
+
+    /* gradiente oficial NXT */
+    --grad:         linear-gradient(135deg, #00D4FF 0%, #8B5CF6 55%, #C084FC 100%);
+    --grad-subtle:  linear-gradient(135deg, rgba(0,212,255,0.15) 0%, rgba(139,92,246,0.15) 100%);
+    --grad-border:  linear-gradient(135deg, #00D4FF, #8B5CF6, #C084FC);
+
+    --green:        #10F5A0;
+    --green-dim:    rgba(16,245,160,0.12);
+    --amber:        #FBBF24;
+    --amber-dim:    rgba(251,191,36,0.12);
+    --red:          #F43F5E;
+    --red-dim:      rgba(244,63,94,0.12);
+
+    --white:        #FFFFFF;
+    --text-primary: #F0EAFF;
+    --text-secondary:#A89FC4;
+    --text-muted:   #6B5E8A;
+
+    --border:       rgba(139,92,246,0.20);
+    --border-light: rgba(255,255,255,0.07);
+
+    --shadow-card:  0 4px 24px rgba(0,0,0,0.35), 0 1px 4px rgba(0,0,0,0.2);
+    --shadow-glow:  0 0 24px rgba(139,92,246,0.25);
+
+    --radius:    12px;
+    --radius-sm: 8px;
+    --radius-lg: 18px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg-deep);
+    color: var(--text-primary);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* scrollbar */
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: var(--bg-deep); }
+  ::-webkit-scrollbar-thumb { background: var(--bg-card-2); border-radius: 99px; }
+
+  /* ──────────── TOPBAR ──────────── */
+  .topbar {
+    background: var(--bg-dark);
+    height: 58px;
+    display: flex;
+    align-items: center;
+    padding: 0 24px;
+    gap: 16px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    border-bottom: 1px solid var(--border);
+    backdrop-filter: blur(12px);
+  }
+
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    font-size: 22px;
+    font-weight: 800;
+    letter-spacing: -1px;
+    color: var(--white);
+    user-select: none;
+  }
+  .logo .logo-x {
+    background: var(--grad);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .topbar-divider {
+    width: 1px; height: 20px;
+    background: var(--border);
+    margin: 0 4px;
+  }
+
+  .breadcrumb {
+    font-size: 13px;
+    color: var(--text-muted);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .breadcrumb .crumb-active {
+    color: var(--text-secondary);
+    font-weight: 500;
+  }
+
+  .topbar-right {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+
+  .period-pill {
+    font-size: 12px;
+    font-weight: 600;
+    background: var(--grad-subtle);
+    border: 1px solid rgba(139,92,246,0.3);
+    color: var(--magenta);
+    padding: 5px 12px;
+    border-radius: 20px;
+  }
+
+  .notif-btn {
+    width: 32px; height: 32px;
+    display: flex; align-items: center; justify-content: center;
+    border-radius: 8px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    cursor: pointer;
+    font-size: 15px;
+    position: relative;
+  }
+  .notif-btn::after {
+    content: '2';
+    position: absolute;
+    top: -4px; right: -4px;
+    width: 16px; height: 16px;
+    background: var(--red);
+    border-radius: 50%;
+    font-size: 9px;
+    font-weight: 700;
+    display: flex; align-items: center; justify-content: center;
+    color: white;
+  }
+
+  .top-avatar {
+    width: 32px; height: 32px;
+    border-radius: 8px;
+    background: var(--grad);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px; font-weight: 700; color: white;
+    cursor: pointer;
+  }
+
+  /* ──────────── LAYOUT ──────────── */
+  .app {
+    display: flex;
+    flex: 1;
+    min-height: calc(100vh - 58px);
+  }
+
+  /* ──────────── SIDEBAR ──────────── */
+  .sidebar {
+    width: 220px;
+    background: var(--bg-dark);
+    border-right: 1px solid var(--border);
+    padding: 16px 10px;
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .sidebar-label {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    padding: 4px 10px;
+    margin: 8px 0 4px;
+  }
+
+  .sidebar-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 10px;
+    border-radius: var(--radius-sm);
+    font-size: 13.5px;
+    font-weight: 500;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all 0.15s;
+    text-decoration: none;
+  }
+  .sidebar-item:hover {
+    background: var(--bg-hover);
+    color: var(--white);
+  }
+  .sidebar-item.active {
+    background: var(--grad-subtle);
+    color: var(--white);
+    font-weight: 600;
+    border: 1px solid rgba(139,92,246,0.25);
+  }
+  .sidebar-item.active .si-icon {
+    background: var(--grad);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .si-icon { font-size: 16px; width: 18px; text-align: center; }
+
+  .sidebar-badge {
+    margin-left: auto;
+    background: var(--red);
+    color: white;
+    font-size: 10px;
+    font-weight: 700;
+    padding: 1px 6px;
+    border-radius: 20px;
+  }
+
+  /* ──────────── MAIN ──────────── */
+  .main { flex: 1; overflow-y: auto; }
+
+  .screen { display: none; padding: 28px 32px; }
+  .screen.active { display: block; }
+
+  /* ──────────── PAGE HEADER ──────────── */
+  .page-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    margin-bottom: 24px;
+  }
+  .page-title {
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--white);
+    letter-spacing: -0.4px;
+  }
+  .page-subtitle {
+    font-size: 13px;
+    color: var(--text-muted);
+    margin-top: 4px;
+  }
+
+  /* ──────────── BUTTONS ──────────── */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 9px 18px;
+    border-radius: var(--radius-sm);
+    font-size: 13.5px;
+    font-weight: 600;
+    font-family: inherit;
+    cursor: pointer;
+    border: none;
+    transition: all 0.18s;
+    text-decoration: none;
+    white-space: nowrap;
+  }
+
+  .btn-primary {
+    background: var(--grad);
+    color: var(--white);
+    box-shadow: 0 4px 16px rgba(139,92,246,0.4);
+  }
+  .btn-primary:hover {
+    opacity: 0.9;
+    transform: translateY(-1px);
+    box-shadow: 0 6px 20px rgba(139,92,246,0.5);
+  }
+
+  .btn-outline {
+    background: transparent;
+    color: var(--text-secondary);
+    border: 1px solid var(--border);
+  }
+  .btn-outline:hover {
+    border-color: rgba(139,92,246,0.5);
+    color: var(--white);
+    background: var(--bg-hover);
+  }
+
+  .btn-ghost {
+    background: transparent;
+    color: var(--text-muted);
+    padding: 6px 12px;
+  }
+  .btn-ghost:hover {
+    background: var(--bg-hover);
+    color: var(--text-secondary);
+  }
+
+  .btn-sm { padding: 6px 13px; font-size: 12.5px; }
+
+  .btn-danger {
+    background: var(--red-dim);
+    color: var(--red);
+    border: 1px solid rgba(244,63,94,0.25);
+  }
+
+  /* ──────────── CARDS ──────────── */
+  .card {
+    background: var(--bg-card);
+    border-radius: var(--radius);
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow-card);
+  }
+  .card-body { padding: 20px 24px; }
+
+  /* ──────────── STAT CARDS ──────────── */
+  .stats-row {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 14px;
+    margin-bottom: 24px;
+  }
+
+  .stat-card {
+    background: var(--bg-card);
+    border-radius: var(--radius);
+    border: 1px solid var(--border);
+    padding: 18px 20px;
+    box-shadow: var(--shadow-card);
+    position: relative;
+    overflow: hidden;
+  }
+  .stat-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+  }
+  .stat-card.grad::before  { background: var(--grad); }
+  .stat-card.green::before { background: var(--green); }
+  .stat-card.amber::before { background: var(--amber); }
+  .stat-card.red::before   { background: var(--red); }
+
+  .stat-card::after {
+    content: '';
+    position: absolute;
+    bottom: -20px; right: -10px;
+    width: 80px; height: 80px;
+    border-radius: 50%;
+    opacity: 0.06;
+  }
+  .stat-card.grad::after  { background: var(--violet); }
+  .stat-card.green::after { background: var(--green); }
+  .stat-card.amber::after { background: var(--amber); }
+  .stat-card.red::after   { background: var(--red); }
+
+  .stat-label {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    margin-bottom: 10px;
+  }
+  .stat-value {
+    font-size: 32px;
+    font-weight: 700;
+    color: var(--white);
+    letter-spacing: -1.5px;
+    line-height: 1;
+  }
+  .stat-meta {
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-top: 6px;
+  }
+  .stat-icon {
+    position: absolute;
+    top: 16px; right: 18px;
+    font-size: 22px;
+    opacity: 0.25;
+  }
+
+  /* ──────────── TABLE ──────────── */
+  .table-wrap {
+    overflow-x: auto;
+    border-radius: var(--radius);
+    border: 1px solid var(--border);
+    background: var(--bg-card);
+    box-shadow: var(--shadow-card);
+  }
+  table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+  thead th {
+    background: rgba(255,255,255,0.03);
+    padding: 11px 16px;
+    text-align: left;
+    font-size: 10.5px;
+    font-weight: 700;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    border-bottom: 1px solid var(--border);
+    white-space: nowrap;
+  }
+  tbody td {
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--border-light);
+    color: var(--text-secondary);
+    vertical-align: middle;
+  }
+  tbody tr:last-child td { border-bottom: none; }
+  tbody tr:hover td { background: rgba(139,92,246,0.06); }
+
+  .cell-main { font-weight: 600; color: var(--white); }
+  .cell-sub  { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+
+  /* ──────────── BADGES ──────────── */
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-size: 11.5px;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+  .badge::before {
+    content: '';
+    width: 5px; height: 5px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+  .badge-green   { background: var(--green-dim);  color: var(--green);  border: 1px solid rgba(16,245,160,0.25); }
+  .badge-green::before   { background: var(--green); }
+  .badge-amber   { background: var(--amber-dim);  color: var(--amber);  border: 1px solid rgba(251,191,36,0.25); }
+  .badge-amber::before   { background: var(--amber); }
+  .badge-red     { background: var(--red-dim);    color: var(--red);    border: 1px solid rgba(244,63,94,0.25); }
+  .badge-red::before     { background: var(--red); }
+  .badge-violet  { background: rgba(139,92,246,0.15); color: var(--magenta); border: 1px solid rgba(139,92,246,0.3); }
+  .badge-violet::before  { background: var(--violet); }
+  .badge-gray    { background: rgba(255,255,255,0.06); color: var(--text-muted); border: 1px solid var(--border); }
+  .badge-gray::before    { background: var(--text-muted); }
+
+  /* ──────────── SECTION HEADER ──────────── */
+  .section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 14px;
+  }
+  .section-title {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--white);
+  }
+
+  /* ──────────── SEARCH ──────────── */
+  .search-row { display: flex; gap: 10px; margin-bottom: 16px; }
+  .search-input {
+    flex: 1;
+    padding: 9px 14px 9px 36px;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border);
+    font-size: 13.5px;
+    font-family: inherit;
+    background: var(--bg-card);
+    color: var(--text-primary);
+    transition: border-color 0.15s;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%236B5E8A' stroke-width='2'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cpath d='m21 21-4.35-4.35'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: 12px center;
+  }
+  .search-input::placeholder { color: var(--text-muted); }
+  .search-input:focus { outline: none; border-color: var(--violet); }
+
+  /* ──────────── PROGRESS ──────────── */
+  .progress-bar {
+    height: 4px;
+    background: rgba(255,255,255,0.08);
+    border-radius: 99px;
+    overflow: hidden;
+    margin-top: 5px;
+  }
+  .progress-fill {
+    height: 100%;
+    border-radius: 99px;
+    background: var(--grad);
+  }
+
+  /* ──────────── ALERT BANNER ──────────── */
+  .alert-banner {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    border-radius: var(--radius-sm);
+    font-size: 13px;
+    font-weight: 500;
+    margin-bottom: 16px;
+  }
+  .alert-banner.amber { background: var(--amber-dim); color: var(--amber); border: 1px solid rgba(251,191,36,0.25); }
+  .alert-banner.red   { background: var(--red-dim);   color: var(--red);   border: 1px solid rgba(244,63,94,0.2); }
+  .alert-banner.green { background: var(--green-dim); color: var(--green); border: 1px solid rgba(16,245,160,0.25); }
+
+  /* ──────────── FICHA ──────────── */
+  .ficha-field { display: flex; flex-direction: column; gap: 3px; }
+  .ficha-field label {
+    font-size: 10.5px;
+    font-weight: 700;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+  }
+  .ficha-field .field-value {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--white);
+  }
+  .ficha-field .field-value.mono {
+    font-family: 'DM Mono', monospace;
+    font-size: 13px;
+    color: var(--cyan);
+  }
+
+  /* ──────────── STEPPER ──────────── */
+  .stepper {
+    display: flex;
+    align-items: center;
+    margin-bottom: 24px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 18px 24px;
+    box-shadow: var(--shadow-card);
+    gap: 0;
+  }
+  .step-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex: 1;
+    position: relative;
+    cursor: pointer;
+  }
+  .step-connector {
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+    margin: 0 4px;
+  }
+  .step-connector.done { background: var(--grad); }
+
+  .step-num {
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    font-size: 12px;
+    font-weight: 700;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+    transition: all 0.2s;
+    position: relative; z-index: 1;
+  }
+  .step-num.done   { background: var(--green); color: var(--bg-deep); }
+  .step-num.active { background: var(--grad);  color: white; box-shadow: 0 0 16px rgba(139,92,246,0.5); }
+  .step-num.pending { background: rgba(255,255,255,0.07); color: var(--text-muted); border: 1px solid var(--border); }
+
+  .step-label { font-size: 11.5px; font-weight: 600; color: var(--text-muted); white-space: nowrap; }
+  .step-item.active .step-label { color: var(--white); }
+  .step-item.done   .step-label { color: var(--green); }
+
+  /* ──────────── UPLOAD ──────────── */
+  .upload-zone {
+    border: 2px dashed rgba(139,92,246,0.3);
+    border-radius: var(--radius);
+    padding: 36px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    background: rgba(139,92,246,0.04);
+    margin-bottom: 16px;
+  }
+  .upload-zone:hover {
+    border-color: var(--violet);
+    background: rgba(139,92,246,0.10);
+  }
+  .upload-icon { font-size: 36px; margin-bottom: 10px; opacity: 0.6; }
+  .upload-title { font-size: 15px; font-weight: 600; color: var(--white); margin-bottom: 5px; }
+  .upload-sub   { font-size: 13px; color: var(--text-muted); }
+  .upload-types { display: flex; gap: 8px; justify-content: center; margin-top: 14px; flex-wrap: wrap; }
+  .upload-type-tag {
+    background: rgba(139,92,246,0.15);
+    color: var(--magenta);
+    font-size: 11.5px; font-weight: 600;
+    padding: 3px 10px;
+    border-radius: 6px;
+    border: 1px solid rgba(139,92,246,0.25);
+  }
+
+  /* ──────────── ATTR TOTAL ──────────── */
+  .attr-total {
+    background: var(--grad);
+    border-radius: var(--radius);
+    padding: 22px 28px;
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 32px;
+    box-shadow: 0 8px 32px rgba(139,92,246,0.4);
+  }
+  .attr-total-label { font-size: 11.5px; color: rgba(255,255,255,0.65); margin-bottom: 4px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+  .attr-total-value { font-size: 26px; font-weight: 700; color: white; letter-spacing: -0.5px; }
+  .attr-total-divider { width: 1px; height: 44px; background: rgba(255,255,255,0.2); }
+
+  /* ──────────── VALIDATION ──────────── */
+  .val-list { display: flex; flex-direction: column; gap: 8px; }
+  .val-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    padding: 14px 18px;
+    border-radius: var(--radius-sm);
+    border: 1px solid transparent;
+    background: var(--bg-card);
+    box-shadow: var(--shadow-card);
+  }
+  .val-item.ok   { border-color: rgba(16,245,160,0.2);  }
+  .val-item.warn { border-color: rgba(251,191,36,0.3);  background: rgba(251,191,36,0.05); }
+  .val-item.err  { border-color: rgba(244,63,94,0.25);  background: rgba(244,63,94,0.05);  }
+  .val-icon  { font-size: 18px; flex-shrink: 0; margin-top: 1px; }
+  .val-title { font-size: 13.5px; font-weight: 600; color: var(--white); }
+  .val-desc  { font-size: 12.5px; color: var(--text-muted); margin-top: 3px; }
+
+  /* ──────────── DOC PREVIEW ──────────── */
+  .doc-preview {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+    box-shadow: var(--shadow-card);
+  }
+  .doc-preview-header {
+    background: var(--grad);
+    padding: 20px 28px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .doc-preview-title { font-size: 14px; font-weight: 700; color: white; letter-spacing: 0.5px; }
+  .doc-preview-meta  { font-size: 12px; color: rgba(255,255,255,0.65); margin-top: 2px; }
+  .doc-preview-body  { padding: 24px 28px; }
+  .doc-field-row {
+    display: grid;
+    grid-template-columns: 180px 1fr;
+    padding: 9px 0;
+    border-bottom: 1px solid var(--border-light);
+    font-size: 13.5px;
+  }
+  .doc-field-row:last-child { border-bottom: none; }
+  .doc-field-label { color: var(--text-muted); font-weight: 500; }
+  .doc-field-val   { color: var(--white); font-weight: 600; }
+
+  /* ──────────── TIMELINE ──────────── */
+  .timeline { display: flex; flex-direction: column; gap: 0; }
+  .tl-item {
+    display: flex;
+    gap: 14px;
+    padding-bottom: 16px;
+    position: relative;
+  }
+  .tl-item:not(:last-child)::before {
+    content: '';
+    position: absolute;
+    left: 14px; top: 28px; bottom: 0;
+    width: 1px;
+    background: var(--border);
+  }
+  .tl-dot {
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px; flex-shrink: 0; z-index: 1;
+  }
+  .tl-dot.green  { background: var(--green-dim); color: var(--green); border: 1px solid rgba(16,245,160,0.3); }
+  .tl-dot.violet { background: rgba(139,92,246,0.2); color: var(--magenta); border: 1px solid rgba(139,92,246,0.3); }
+  .tl-dot.amber  { background: var(--amber-dim); color: var(--amber); border: 1px solid rgba(251,191,36,0.3); }
+  .tl-content { padding-top: 4px; }
+  .tl-title { font-size: 13px; font-weight: 600; color: var(--white); }
+  .tl-time  { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+
+  /* ──────────── BANDEJA ──────────── */
+  .bandeja-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px 20px;
+    box-shadow: var(--shadow-card);
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 10px;
+    cursor: pointer;
+    transition: all 0.18s;
+  }
+  .bandeja-card:hover {
+    border-color: rgba(139,92,246,0.4);
+    background: var(--bg-card-2);
+    box-shadow: var(--shadow-glow);
+  }
+  .bandeja-period {
+    background: var(--grad);
+    border-radius: var(--radius-sm);
+    padding: 10px 14px;
+    text-align: center;
+    min-width: 68px;
+    flex-shrink: 0;
+  }
+  .bandeja-period-month { font-size: 13px; font-weight: 700; color: white; }
+  .bandeja-period-year  { font-size: 11px; color: rgba(255,255,255,0.6); }
+  .bandeja-info { flex: 1; }
+  .bandeja-title { font-size: 14px; font-weight: 700; color: var(--white); }
+  .bandeja-sub   { font-size: 12.5px; color: var(--text-muted); margin-top: 2px; }
+  .bandeja-amount-val { font-size: 17px; font-weight: 700; color: var(--white); text-align: right; }
+  .bandeja-amount-sub { font-size: 11.5px; color: var(--text-muted); text-align: right; }
+
+  /* ──────────── NAV TABS ──────────── */
+  .nav-tabs {
+    display: flex;
+    gap: 2px;
+    background: var(--bg-card);
+    border-radius: var(--radius-sm);
+    padding: 3px;
+    margin-bottom: 20px;
+    border: 1px solid var(--border);
+  }
+  .nav-tab {
+    flex: 1; text-align: center;
+    padding: 8px 14px;
+    border-radius: 6px;
+    font-size: 13px; font-weight: 600;
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .nav-tab.active {
+    background: var(--grad);
+    color: white;
+  }
+
+  /* ──────────── STEP CONTENT ──────────── */
+  .step-content {
+    background: var(--bg-card);
+    border-radius: var(--radius);
+    border: 1px solid rgba(139,92,246,0.3);
+    padding: 22px 24px;
+    box-shadow: var(--shadow-card);
+    margin-bottom: 16px;
+  }
+  .step-content-title { font-size: 16px; font-weight: 700; color: var(--white); margin-bottom: 4px; }
+  .step-content-sub   { font-size: 13px; color: var(--text-muted); margin-bottom: 18px; }
+
+  /* ──────────── ACTIONS BAR ──────────── */
+  .actions-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 14px 20px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-card);
+    margin-top: 16px;
+  }
+
+  /* ──────────── INFO PILL ──────────── */
+  .info-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: var(--text-muted);
+    background: rgba(255,255,255,0.05);
+    border: 1px solid var(--border);
+    padding: 4px 10px;
+    border-radius: 20px;
+  }
+
+  /* ──────────── PERIODO SELECTOR ──────────── */
+  .periodo-grid {
+    display: grid;
+    grid-template-columns: repeat(6,1fr);
+    gap: 10px;
+    margin-top: 12px;
+  }
+  .periodo-item {
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 12px 8px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.15s;
+    background: var(--bg-card);
+  }
+  .periodo-item:hover { border-color: var(--violet); background: var(--bg-hover); }
+  .periodo-item.selected { background: var(--grad); border-color: transparent; }
+  .periodo-item.selected .periodo-month { color: white; }
+  .periodo-item.selected .periodo-year { color: rgba(255,255,255,0.7); }
+  .periodo-month { font-size: 13px; font-weight: 700; color: var(--white); }
+  .periodo-year  { font-size: 11px; color: var(--text-muted); }
+
+  /* ──────────── EDITABLE ──────────── */
+  .editable {
+    border-bottom: 1.5px dashed var(--violet);
+    cursor: pointer;
+    color: var(--cyan);
+    font-weight: 600;
+    font-family: 'DM Mono', monospace;
+  }
+
+  /* ──────────── DIVIDER ──────────── */
+  .divider { height: 1px; background: var(--border); margin: 16px 0; }
+
+  /* ──────────── UTILS ──────────── */
+  .two-col   { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .three-col { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+  .flex      { display: flex; }
+  .items-center { align-items: center; }
+  .gap-8  { gap: 8px; }
+  .gap-12 { gap: 12px; }
+  .mt-16  { margin-top: 16px; }
+  .mt-20  { margin-top: 20px; }
+  .mb-8   { margin-bottom: 8px; }
+  .mb-12  { margin-bottom: 12px; }
+  .mb-16  { margin-bottom: 16px; }
+  .mb-20  { margin-bottom: 20px; }
+  .fw-700 { font-weight: 700; }
+  .text-right { text-align: right; }
+  .mono { font-family: 'DM Mono', monospace; font-size: 13px; }
+  .text-cyan { color: var(--cyan); }
+  .text-green { color: var(--green); }
+  .text-red { color: var(--red); }
+  .text-muted { color: var(--text-muted); }
+  .text-white { color: var(--white); }
+  .grad-text {
+    background: var(--grad);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  /* ──────────── GLOW ACCENT LINE ──────────── */
+  .grad-line {
+    height: 2px;
+    background: var(--grad);
+    border-radius: 99px;
+    margin-bottom: 20px;
+    opacity: 0.6;
+  }
+</style>
+</head>
+<body>
+
+<!-- ══════ TOPBAR ══════ -->
+<div class="topbar">
+  <div class="logo">N<span class="logo-x">X</span>T</div>
+  <div class="topbar-divider"></div>
+  <div class="breadcrumb">
+    Consorcios <span style="color:var(--border);margin:0 4px">›</span>
+    <span class="crumb-active" id="breadcrumb-text">Dashboard</span>
+  </div>
+  <div class="topbar-right">
+    <div class="period-pill">📅 Periodo activo: Mayo 2025</div>
+    <div class="notif-btn">🔔</div>
+    <div class="top-avatar">CR</div>
+  </div>
+</div>
+
+<div class="app">
+
+<!-- ══════ SIDEBAR ══════ -->
+<aside class="sidebar">
+  <div class="sidebar-label">Principal</div>
+  <a class="sidebar-item active" onclick="showScreen('dashboard')">
+    <span class="si-icon">⊞</span> Dashboard
+  </a>
+  <a class="sidebar-item" onclick="showScreen('ficha')">
+    <span class="si-icon">🗂</span> Mis consorcios
+  </a>
+  <a class="sidebar-item" onclick="showScreen('bandeja')">
+    <span class="si-icon">📥</span> Bandeja del partícipe
+    <span class="sidebar-badge">3</span>
+  </a>
+
+  <div class="sidebar-label">Proceso</div>
+  <a class="sidebar-item" onclick="showScreen('flujo')">
+    <span class="si-icon">✦</span> Nuevo documento
+  </a>
+  <a class="sidebar-item" onclick="showScreen('documentos')">
+    <span class="si-icon">📄</span> Documentos emitidos
+  </a>
+
+  <div class="sidebar-label">Configuración</div>
+  <a class="sidebar-item">
+    <span class="si-icon">⚙</span> Ajustes
+  </a>
+  <a class="sidebar-item">
+    <span class="si-icon">?</span> Ayuda
+  </a>
+</aside>
+
+<!-- ══════ MAIN ══════ -->
+<div class="main">
+
+
+<!-- ████████████████████████████████████████
+     SCREEN 1 – DASHBOARD
+████████████████████████████████████████ -->
+<div class="screen active" id="screen-dashboard">
+  <div class="page-header">
+    <div>
+      <div class="page-title">Gestor de Consorcios</div>
+      <div class="page-subtitle">Documentos de atribución · Periodo activo: Mayo 2025</div>
+    </div>
+    <div class="flex gap-8">
+      <button class="btn btn-outline" onclick="showScreen('ficha')">Ver ficha</button>
+      <button class="btn btn-primary" onclick="showScreen('flujo')">+ Nuevo documento de atribución</button>
+    </div>
+  </div>
+
+  <div class="alert-banner amber">
+    ⚠️ <strong>2 comprobantes requieren atención</strong> en "Proyecto Torres del Sur" antes del cierre del 31 de mayo.
+    <a href="#" style="margin-left:auto;font-weight:700;color:inherit;text-decoration:underline;" onclick="showScreen('carga');return false;">Revisar ahora →</a>
+  </div>
+
+  <div class="stats-row">
+    <div class="stat-card grad">
+      <div class="stat-icon">📋</div>
+      <div class="stat-label">Total consorcios</div>
+      <div class="stat-value grad-text">4</div>
+      <div class="stat-meta">2 con período abierto</div>
+    </div>
+    <div class="stat-card green">
+      <div class="stat-icon">✓</div>
+      <div class="stat-label">Documentos emitidos</div>
+      <div class="stat-value" style="color:var(--green)">12</div>
+      <div class="stat-meta">Este año fiscal</div>
+    </div>
+    <div class="stat-card amber">
+      <div class="stat-icon">⏳</div>
+      <div class="stat-label">Pendientes de emisión</div>
+      <div class="stat-value" style="color:var(--amber)">3</div>
+      <div class="stat-meta">Cierre: 31 mayo</div>
+    </div>
+    <div class="stat-card red">
+      <div class="stat-icon">!</div>
+      <div class="stat-label">Alertas activas</div>
+      <div class="stat-value" style="color:var(--red)">2</div>
+      <div class="stat-meta">Requieren acción</div>
+    </div>
+  </div>
+
+  <div class="section-header">
+    <div class="section-title">Consorcios activos</div>
+    <div class="flex gap-8">
+      <input class="search-input" placeholder="Buscar consorcio..." style="width:220px;">
+      <button class="btn btn-outline btn-sm">Filtrar</button>
+    </div>
+  </div>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Consorcio / Proyecto</th>
+          <th>Operador</th>
+          <th>Partícipes</th>
+          <th>Período</th>
+          <th>Avance</th>
+          <th>Estado</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr onclick="showScreen('ficha')" style="cursor:pointer">
+          <td>
+            <div class="cell-main">Proyecto Torres del Sur</div>
+            <div class="cell-sub">Consorcio inmobiliario · RUC 20601234567</div>
+          </td>
+          <td class="text-muted">Constructora Rimac S.A.C.</td>
+          <td class="text-muted">3 partícipes</td>
+          <td class="text-muted">Mayo 2025</td>
+          <td style="width:130px">
+            <div style="font-size:12px;color:var(--text-muted);">Paso 3 / 7</div>
+            <div class="progress-bar"><div class="progress-fill" style="width:43%"></div></div>
+          </td>
+          <td><span class="badge badge-amber">En revisión</span></td>
+          <td><button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();showScreen('flujo')">Continuar →</button></td>
+        </tr>
+        <tr onclick="showScreen('ficha')" style="cursor:pointer">
+          <td>
+            <div class="cell-main">Consorcio Vial Norte 2024</div>
+            <div class="cell-sub">Consorcio de infraestructura · RUC 20609871234</div>
+          </td>
+          <td class="text-muted">Ingeniería Vial Perú S.A.</td>
+          <td class="text-muted">4 partícipes</td>
+          <td class="text-muted">Mayo 2025</td>
+          <td style="width:130px">
+            <div style="font-size:12px;color:var(--green);">Completado</div>
+            <div class="progress-bar"><div class="progress-fill" style="width:100%;background:var(--green)"></div></div>
+          </td>
+          <td><span class="badge badge-green">Emitido</span></td>
+          <td><button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();showScreen('documento')">Ver doc. →</button></td>
+        </tr>
+        <tr>
+          <td>
+            <div class="cell-main">Consorcio Minero Andino</div>
+            <div class="cell-sub">Consorcio extractivo · RUC 20715430982</div>
+          </td>
+          <td class="text-muted">Minera Cóndor S.A.C.</td>
+          <td class="text-muted">2 partícipes</td>
+          <td class="text-muted">Mayo 2025</td>
+          <td style="width:130px">
+            <div style="font-size:12px;color:var(--text-muted);">No iniciado</div>
+            <div class="progress-bar"><div class="progress-fill" style="width:0%"></div></div>
+          </td>
+          <td><span class="badge badge-gray">Pendiente</span></td>
+          <td><button class="btn btn-ghost btn-sm" onclick="showScreen('flujo')">Iniciar →</button></td>
+        </tr>
+        <tr>
+          <td>
+            <div class="cell-main">Proyecto Fibra Óptica Sur</div>
+            <div class="cell-sub">Consorcio tecnológico · RUC 20801234100</div>
+          </td>
+          <td class="text-muted">TelcoAndina S.A.</td>
+          <td class="text-muted">5 partícipes</td>
+          <td class="text-muted">Abril 2025</td>
+          <td style="width:130px">
+            <div style="font-size:12px;color:var(--red);">Observado</div>
+            <div class="progress-bar"><div class="progress-fill" style="width:85%;background:var(--red)"></div></div>
+          </td>
+          <td><span class="badge badge-red">Observado</span></td>
+          <td><button class="btn btn-ghost btn-sm" onclick="showScreen('validaciones')">Corregir →</button></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+
+<!-- ████████████████████████████████████████
+     SCREEN 2 – FICHA DEL CONSORCIO
+████████████████████████████████████████ -->
+<div class="screen" id="screen-ficha">
+  <div class="page-header">
+    <div>
+      <div class="page-title">Proyecto Torres del Sur</div>
+      <div class="page-subtitle">Ficha del consorcio · RUC 20601234567 · <span class="badge badge-green" style="vertical-align:middle">Vigente</span></div>
+    </div>
+    <div class="flex gap-8">
+      <button class="btn btn-outline" onclick="showScreen('dashboard')">← Volver</button>
+      <button class="btn btn-primary" onclick="showScreen('flujo')">+ Generar atribución</button>
+    </div>
+  </div>
+
+  <div class="two-col">
+    <div class="card">
+      <div class="card-body">
+        <div class="section-header">
+          <div class="section-title">📋 Datos del contrato</div>
+          <button class="btn btn-outline btn-sm">✏ Editar</button>
+        </div>
+        <div class="grad-line"></div>
+        <div style="display:flex;flex-direction:column;gap:16px;">
+          <div class="ficha-field"><label>Denominación</label><div class="field-value">Proyecto Torres del Sur</div></div>
+          <div class="ficha-field"><label>Tipo de contrato</label><div class="field-value">Consorcio sin contabilidad independiente</div></div>
+          <div class="ficha-field"><label>RUC del operador</label><div class="field-value mono">20601234567</div></div>
+          <div class="ficha-field"><label>Operador</label><div class="field-value">Constructora Rimac S.A.C.</div></div>
+          <div class="ficha-field"><label>Fecha del contrato</label><div class="field-value">14 de enero de 2024</div></div>
+          <div class="ficha-field"><label>Periodicidad de atribución</label><div class="field-value">Mensual</div></div>
+        </div>
+      </div>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:14px;">
+      <div class="card">
+        <div class="card-body">
+          <div class="section-title mb-12">👤 Responsables</div>
+          <div style="display:flex;flex-direction:column;gap:14px;">
+            <div class="ficha-field"><label>Responsable Legal</label><div class="field-value">Dra. María Fernández</div></div>
+            <div class="ficha-field"><label>Responsable Tributario</label><div class="field-value">CPC Jorge Quispe</div></div>
+            <div class="ficha-field"><label>Correo de contacto</label><div class="field-value mono">mfernandez@rimac.com.pe</div></div>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-body">
+          <div class="section-title mb-12">📅 Historial de periodos</div>
+          <div style="font-size:13px;display:flex;flex-direction:column;gap:8px;">
+            <div class="flex items-center gap-8"><span class="badge badge-green">Emitido</span><span class="text-muted">Abril 2025</span><span class="text-muted" style="margin-left:auto">15/05/2025</span></div>
+            <div class="flex items-center gap-8"><span class="badge badge-green">Emitido</span><span class="text-muted">Marzo 2025</span><span class="text-muted" style="margin-left:auto">14/04/2025</span></div>
+            <div class="flex items-center gap-8"><span class="badge badge-green">Emitido</span><span class="text-muted">Febrero 2025</span><span class="text-muted" style="margin-left:auto">13/03/2025</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card mt-16">
+    <div class="card-body">
+      <div class="section-header">
+        <div class="section-title">🤝 Partícipes del consorcio</div>
+        <button class="btn btn-outline btn-sm">+ Agregar partícipe</button>
+      </div>
+      <div class="table-wrap" style="border:none;box-shadow:none;background:transparent;">
+        <table>
+          <thead>
+            <tr>
+              <th>Razón social</th>
+              <th>RUC</th>
+              <th>% Participación</th>
+              <th>Tipo</th>
+              <th>Estado RUC</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><div class="cell-main">Constructora Rimac S.A.C.</div><div class="cell-sub">Operador del consorcio</div></td>
+              <td class="mono text-cyan">20601234567</td>
+              <td>
+                <div class="flex items-center gap-8">
+                  <div style="width:80px;background:rgba(255,255,255,0.07);border-radius:99px;height:5px;overflow:hidden;">
+                    <div style="width:50%;height:100%;background:var(--grad)"></div>
+                  </div>
+                  <strong class="text-white">50%</strong>
+                </div>
+              </td>
+              <td><span class="badge badge-violet">Operador</span></td>
+              <td><span class="badge badge-green">Habido · Activo</span></td>
+              <td><button class="btn btn-ghost btn-sm">✏</button></td>
+            </tr>
+            <tr>
+              <td><div class="cell-main">Inversiones Andina S.A.</div></td>
+              <td class="mono text-cyan">20509876543</td>
+              <td>
+                <div class="flex items-center gap-8">
+                  <div style="width:80px;background:rgba(255,255,255,0.07);border-radius:99px;height:5px;overflow:hidden;">
+                    <div style="width:30%;height:100%;background:var(--grad)"></div>
+                  </div>
+                  <strong class="text-white">30%</strong>
+                </div>
+              </td>
+              <td><span class="badge badge-gray">Partícipe</span></td>
+              <td><span class="badge badge-green">Habido · Activo</span></td>
+              <td><button class="btn btn-ghost btn-sm">✏</button></td>
+            </tr>
+            <tr>
+              <td><div class="cell-main">Grupo Inmobiliario Lima S.A.C.</div></td>
+              <td class="mono text-cyan">20612340987</td>
+              <td>
+                <div class="flex items-center gap-8">
+                  <div style="width:80px;background:rgba(255,255,255,0.07);border-radius:99px;height:5px;overflow:hidden;">
+                    <div style="width:20%;height:100%;background:var(--grad)"></div>
+                  </div>
+                  <strong class="text-white">20%</strong>
+                </div>
+              </td>
+              <td><span class="badge badge-gray">Partícipe</span></td>
+              <td><span class="badge badge-amber">Verificar</span></td>
+              <td><button class="btn btn-ghost btn-sm">✏</button></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border);font-size:13px;color:var(--text-muted);display:flex;justify-content:flex-end;gap:16px;">
+        <span>Total participación:</span>
+        <strong class="text-green">100% ✓</strong>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ████████████████████████████████████████
+     SCREEN 3 – FLUJO GUIADO
+████████████████████████████████████████ -->
+<div class="screen" id="screen-flujo">
+  <div class="page-header">
+    <div>
+      <div class="page-title">Nuevo documento de atribución</div>
+      <div class="page-subtitle">Proyecto Torres del Sur · Sigue los pasos para generar el documento</div>
+    </div>
+    <button class="btn btn-outline" onclick="showScreen('dashboard')">← Salir del flujo</button>
+  </div>
+
+  <div class="stepper">
+    <div class="step-item done"><div class="step-num done">✓</div><div class="step-label">Periodo</div></div>
+    <div class="step-connector done"></div>
+    <div class="step-item done"><div class="step-num done">✓</div><div class="step-label">Contrato</div></div>
+    <div class="step-connector done"></div>
+    <div class="step-item active"><div class="step-num active">3</div><div class="step-label">Documentos</div></div>
+    <div class="step-connector"></div>
+    <div class="step-item"><div class="step-num pending">4</div><div class="step-label">Cálculo</div></div>
+    <div class="step-connector"></div>
+    <div class="step-item"><div class="step-num pending">5</div><div class="step-label">Validación</div></div>
+    <div class="step-connector"></div>
+    <div class="step-item"><div class="step-num pending">6</div><div class="step-label">Generar</div></div>
+    <div class="step-connector"></div>
+    <div class="step-item"><div class="step-num pending">7</div><div class="step-label">Enviar</div></div>
+  </div>
+
+  <div class="two-col mb-16">
+    <div class="card">
+      <div class="card-body">
+        <div class="flex items-center gap-8 mb-12">
+          <span class="text-green" style="font-size:18px;">✓</span>
+          <div class="section-title">Paso 1 completado: Periodo</div>
+        </div>
+        <div class="ficha-field"><label>Periodo seleccionado</label><div class="field-value">Mayo 2025 (01/05/2025 – 31/05/2025)</div></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-body">
+        <div class="flex items-center gap-8 mb-12">
+          <span class="text-green" style="font-size:18px;">✓</span>
+          <div class="section-title">Paso 2 completado: Contrato</div>
+        </div>
+        <div class="ficha-field"><label>Consorcio</label><div class="field-value">Proyecto Torres del Sur</div></div>
+        <div class="ficha-field" style="margin-top:8px;"><label>Operador</label><div class="field-value">Constructora Rimac S.A.C.</div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="step-content">
+    <div class="step-content-title">Paso 3: Carga de documentos sustentatorios</div>
+    <div class="step-content-sub">Sube las facturas, notas de crédito y comprobantes del periodo Mayo 2025. Se admiten hasta 200 archivos por periodo.</div>
+    <button class="btn btn-primary" onclick="showScreen('carga')">📂 Ir a carga de documentos</button>
+  </div>
+
+  <div class="actions-bar">
+    <button class="btn btn-outline">← Paso anterior</button>
+    <div class="flex gap-8 items-center">
+      <span class="info-pill">📌 Guardado automático activado</span>
+      <button class="btn btn-primary" onclick="showScreen('calculo')">Continuar al cálculo →</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- ████████████████████████████████████████
+     SCREEN 4 – CARGA DE DOCUMENTOS
+████████████████████████████████████████ -->
+<div class="screen" id="screen-carga">
+  <div class="page-header">
+    <div>
+      <div class="page-title">Carga de documentos sustentatorios</div>
+      <div class="page-subtitle">Mayo 2025 · Proyecto Torres del Sur · <span style="color:var(--amber);font-weight:600;">2 comprobantes requieren atención</span></div>
+    </div>
+    <button class="btn btn-outline" onclick="showScreen('flujo')">← Volver al flujo</button>
+  </div>
+
+  <div class="upload-zone">
+    <div class="upload-icon">⬆</div>
+    <div class="upload-title">Arrastra tus comprobantes aquí o haz clic para seleccionarlos</div>
+    <div class="upload-sub">Sube uno a uno o en lote · Máx. 10 MB por archivo</div>
+    <div class="upload-types">
+      <span class="upload-type-tag">PDF</span>
+      <span class="upload-type-tag">XML (SUNAT)</span>
+      <span class="upload-type-tag">JPG / PNG</span>
+      <span class="upload-type-tag">Excel .xlsx</span>
+      <span class="upload-type-tag">ZIP</span>
+    </div>
+  </div>
+
+  <div class="alert-banner amber">
+    ⚠️ 2 comprobantes presentan inconsistencias. Revísalos antes de continuar al cálculo.
+  </div>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Documento</th>
+          <th>Proveedor</th>
+          <th>Fecha</th>
+          <th>Base imponible</th>
+          <th>IGV</th>
+          <th>Total</th>
+          <th>Estado</th>
+          <th>Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="text-muted mono">01</td>
+          <td><div class="cell-main">F001-00123456</div><div class="cell-sub">Factura electrónica</div></td>
+          <td class="text-muted">Aceros del Perú S.A.</td>
+          <td class="text-muted">03/05/2025</td>
+          <td class="mono text-right text-white">S/ 42,372.88</td>
+          <td class="mono text-right text-muted">S/ 7,627.12</td>
+          <td class="mono text-right fw-700 text-white">S/ 50,000.00</td>
+          <td><span class="badge badge-green">Válido</span></td>
+          <td><button class="btn btn-ghost btn-sm">🗑</button></td>
+        </tr>
+        <tr>
+          <td class="text-muted mono">02</td>
+          <td><div class="cell-main">F002-00087654</div><div class="cell-sub">Factura electrónica</div></td>
+          <td class="text-muted">Cemento Andino S.A.</td>
+          <td class="text-muted">08/05/2025</td>
+          <td class="mono text-right text-white">S/ 25,423.73</td>
+          <td class="mono text-right text-muted">S/ 4,576.27</td>
+          <td class="mono text-right fw-700 text-white">S/ 30,000.00</td>
+          <td><span class="badge badge-green">Válido</span></td>
+          <td><button class="btn btn-ghost btn-sm">🗑</button></td>
+        </tr>
+        <tr style="background:rgba(251,191,36,0.04);">
+          <td class="text-muted mono">03</td>
+          <td><div class="cell-main">F001-00099988</div><div class="cell-sub">Factura electrónica</div></td>
+          <td class="text-muted">Importaciones García E.I.R.L.</td>
+          <td class="text-muted">12/05/2025</td>
+          <td class="mono text-right text-white">S/ 16,949.15</td>
+          <td class="mono text-right text-muted">S/ 3,050.85</td>
+          <td class="mono text-right fw-700 text-white">S/ 20,000.00</td>
+          <td><span class="badge badge-amber">Observado</span></td>
+          <td><div class="flex gap-8"><button class="btn btn-ghost btn-sm">✏ Corregir</button><button class="btn btn-ghost btn-sm">🗑</button></div></td>
+        </tr>
+        <tr style="background:rgba(244,63,94,0.04);">
+          <td class="text-muted mono">04</td>
+          <td><div class="cell-main">F001-00123456</div><div class="cell-sub" style="color:var(--red);">⚠ Posible duplicado</div></td>
+          <td class="text-muted">Aceros del Perú S.A.</td>
+          <td class="text-muted">03/05/2025</td>
+          <td class="mono text-right text-white">S/ 42,372.88</td>
+          <td class="mono text-right text-muted">S/ 7,627.12</td>
+          <td class="mono text-right fw-700 text-white">S/ 50,000.00</td>
+          <td><span class="badge badge-red">Duplicado</span></td>
+          <td><button class="btn btn-danger btn-sm">Eliminar</button></td>
+        </tr>
+        <tr>
+          <td class="text-muted mono">05</td>
+          <td><div class="cell-main">DUA-2025-001423</div><div class="cell-sub">Declaración de importación</div></td>
+          <td class="text-muted">—</td>
+          <td class="text-muted">15/05/2025</td>
+          <td class="mono text-right text-white">S/ 84,745.76</td>
+          <td class="mono text-right text-muted">S/ 15,254.24</td>
+          <td class="mono text-right fw-700 text-white">S/ 100,000.00</td>
+          <td><span class="badge badge-gray">Pendiente</span></td>
+          <td><button class="btn btn-ghost btn-sm">✏ Completar</button></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="actions-bar">
+    <div style="font-size:13px;color:var(--text-muted);">5 documentos cargados · Total válido: <strong class="text-white">S/ 200,000.00</strong></div>
+    <div class="flex gap-8">
+      <button class="btn btn-outline" onclick="showScreen('flujo')">← Volver</button>
+      <button class="btn btn-primary" onclick="showScreen('calculo')">Ir al cálculo →</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- ████████████████████████████████████████
+     SCREEN 5 – CÁLCULO DE ATRIBUCIÓN
+████████████████████████████████████████ -->
+<div class="screen" id="screen-calculo">
+  <div class="page-header">
+    <div>
+      <div class="page-title">Cálculo de atribución</div>
+      <div class="page-subtitle">Mayo 2025 · Proyecto Torres del Sur · 3 partícipes</div>
+    </div>
+    <button class="btn btn-outline" onclick="showScreen('carga')">← Volver</button>
+  </div>
+
+  <div class="attr-total">
+    <div>
+      <div class="attr-total-label">Base imponible total del periodo</div>
+      <div class="attr-total-value">S/ 169,491.53</div>
+    </div>
+    <div class="attr-total-divider"></div>
+    <div>
+      <div class="attr-total-label">IGV / Crédito fiscal total</div>
+      <div class="attr-total-value">S/ 30,508.47</div>
+    </div>
+    <div class="attr-total-divider"></div>
+    <div>
+      <div class="attr-total-label">Total atribuido del periodo</div>
+      <div class="attr-total-value">S/ 200,000.00</div>
+    </div>
+    <div style="margin-left:auto">
+      <div style="font-size:11px;color:rgba(255,255,255,0.55);margin-bottom:5px;">Comprobantes válidos</div>
+      <span class="badge badge-green" style="background:rgba(16,245,160,0.2);">3 documentos</span>
+    </div>
+  </div>
+
+  <div class="card mb-16">
+    <div class="card-body">
+      <div class="section-header">
+        <div class="section-title">⚙ Regla de atribución aplicada</div>
+        <span class="info-pill">Los porcentajes se toman del contrato vigente</span>
+      </div>
+      <div class="flex gap-12 items-center">
+        <label style="font-size:13.5px;font-weight:600;color:var(--white);cursor:pointer;">
+          <input type="radio" name="regla" checked style="margin-right:6px;accent-color:var(--violet);">
+          Porcentaje de participación contractual
+        </label>
+        <label style="font-size:13.5px;font-weight:600;color:var(--text-muted);cursor:pointer;">
+          <input type="radio" name="regla" style="margin-right:6px;accent-color:var(--violet);">
+          Regla especial (definir manualmente)
+        </label>
+      </div>
+    </div>
+  </div>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Partícipe</th>
+          <th>RUC</th>
+          <th>% Participación</th>
+          <th>Base imponible atribuida</th>
+          <th>IGV / Crédito fiscal</th>
+          <th>Gasto / Costo</th>
+          <th>Total atribuido</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><div class="cell-main">Constructora Rimac S.A.C.</div><div class="cell-sub">Operador</div></td>
+          <td class="mono text-cyan">20601234567</td>
+          <td><div class="flex items-center gap-8"><span class="editable">50%</span><span style="font-size:11px;color:var(--violet);">✏</span></div></td>
+          <td class="mono text-white">S/ 84,745.76</td>
+          <td class="mono text-muted">S/ 15,254.24</td>
+          <td class="mono text-muted">S/ 84,745.76</td>
+          <td class="mono fw-700 text-white">S/ 100,000.00</td>
+        </tr>
+        <tr>
+          <td><div class="cell-main">Inversiones Andina S.A.</div></td>
+          <td class="mono text-cyan">20509876543</td>
+          <td><div class="flex items-center gap-8"><span class="editable">30%</span><span style="font-size:11px;color:var(--violet);">✏</span></div></td>
+          <td class="mono text-white">S/ 50,847.46</td>
+          <td class="mono text-muted">S/ 9,152.54</td>
+          <td class="mono text-muted">S/ 50,847.46</td>
+          <td class="mono fw-700 text-white">S/ 60,000.00</td>
+        </tr>
+        <tr>
+          <td><div class="cell-main">Grupo Inmobiliario Lima S.A.C.</div></td>
+          <td class="mono text-cyan">20612340987</td>
+          <td><div class="flex items-center gap-8"><span class="editable">20%</span><span style="font-size:11px;color:var(--violet);">✏</span></div></td>
+          <td class="mono text-white">S/ 33,898.31</td>
+          <td class="mono text-muted">S/ 6,101.69</td>
+          <td class="mono text-muted">S/ 33,898.31</td>
+          <td class="mono fw-700 text-white">S/ 40,000.00</td>
+        </tr>
+        <tr style="background:rgba(139,92,246,0.08);">
+          <td colspan="2" style="font-weight:700;color:var(--white);">TOTAL DEL PERÍODO</td>
+          <td style="font-weight:700;" class="text-green">100% ✓</td>
+          <td class="mono fw-700 text-white">S/ 169,491.53</td>
+          <td class="mono fw-700 text-white">S/ 30,508.47</td>
+          <td class="mono fw-700 text-white">S/ 169,491.53</td>
+          <td class="mono fw-700 grad-text" style="font-size:15px;">S/ 200,000.00</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="actions-bar">
+    <button class="btn btn-outline" onclick="showScreen('carga')">← Volver</button>
+    <button class="btn btn-primary" onclick="showScreen('validaciones')">Ir a validaciones →</button>
+  </div>
+</div>
+
+
+<!-- ████████████████████████████████████████
+     SCREEN 6 – VALIDACIONES
+████████████████████████████████████████ -->
+<div class="screen" id="screen-validaciones">
+  <div class="page-header">
+    <div>
+      <div class="page-title">Validaciones previas a la emisión</div>
+      <div class="page-subtitle">Revisa que todo esté en orden antes de generar el documento</div>
+    </div>
+    <button class="btn btn-outline" onclick="showScreen('calculo')">← Volver</button>
+  </div>
+
+  <div class="alert-banner amber">
+    ⚠️ Hay 1 advertencia activa. Puedes emitir el documento, pero te recomendamos resolver la observación primero.
+  </div>
+
+  <div class="three-col mb-20">
+    <div class="stat-card green" style="text-align:center;">
+      <div style="font-size:36px;margin-bottom:8px;">✅</div>
+      <div class="stat-label">Controles aprobados</div>
+      <div class="stat-value" style="font-size:28px;color:var(--green)">7</div>
+    </div>
+    <div class="stat-card amber" style="text-align:center;">
+      <div style="font-size:36px;margin-bottom:8px;">⚠️</div>
+      <div class="stat-label">Advertencias</div>
+      <div class="stat-value" style="font-size:28px;color:var(--amber)">1</div>
+    </div>
+    <div class="stat-card" style="text-align:center;border-color:rgba(255,255,255,0.05);">
+      <div style="font-size:36px;margin-bottom:8px;opacity:0.2;">✗</div>
+      <div class="stat-label">Errores críticos</div>
+      <div class="stat-value" style="font-size:28px;color:var(--text-muted)">0</div>
+    </div>
+  </div>
+
+  <div class="val-list">
+    <div class="val-item ok"><div class="val-icon">✅</div>
+      <div><div class="val-title">Porcentajes de participación suman 100%</div>
+      <div class="val-desc">50% + 30% + 20% = 100%. Sin errores de distribución.</div></div>
+    </div>
+    <div class="val-item ok"><div class="val-icon">✅</div>
+      <div><div class="val-title">Operador identificado y registrado</div>
+      <div class="val-desc">Constructora Rimac S.A.C. · RUC 20601234567 — Estado: Habido, Activo.</div></div>
+    </div>
+    <div class="val-item ok"><div class="val-icon">✅</div>
+      <div><div class="val-title">RUC de partícipes verificados en SUNAT</div>
+      <div class="val-desc">2 de 3 partícipes validados correctamente. Ver advertencia más abajo.</div></div>
+    </div>
+    <div class="val-item ok"><div class="val-icon">✅</div>
+      <div><div class="val-title">Comprobantes sin duplicados</div>
+      <div class="val-desc">El comprobante duplicado fue eliminado. La base de cálculo está limpia.</div></div>
+    </div>
+    <div class="val-item ok"><div class="val-icon">✅</div>
+      <div><div class="val-title">Contrato vigente dentro del plazo</div>
+      <div class="val-desc">Contrato activo al 31/05/2025. Sin vencimientos próximos.</div></div>
+    </div>
+    <div class="val-item ok"><div class="val-icon">✅</div>
+      <div><div class="val-title">Periodo no emitido previamente</div>
+      <div class="val-desc">Mayo 2025 no tiene documento de atribución emitido. Puede generarse sin conflicto.</div></div>
+    </div>
+    <div class="val-item warn"><div class="val-icon">⚠️</div>
+      <div><div class="val-title">Grupo Inmobiliario Lima S.A.C. — Estado RUC pendiente de verificación</div>
+      <div class="val-desc">El sistema no pudo confirmar el estado SUNAT de este partícipe. Se recomienda verificar manualmente antes de emitir el documento.</div>
+      <div style="margin-top:10px;"><button class="btn btn-outline btn-sm">Verificar en SUNAT →</button></div></div>
+    </div>
+    <div class="val-item ok"><div class="val-icon">✅</div>
+      <div><div class="val-title">Cálculo de atribución cuadra con totales de comprobantes</div>
+      <div class="val-desc">S/ 200,000.00 atribuidos = S/ 200,000.00 en comprobantes válidos. Sin diferencias.</div></div>
+    </div>
+  </div>
+
+  <div class="actions-bar">
+    <button class="btn btn-outline" onclick="showScreen('calculo')">← Volver al cálculo</button>
+    <button class="btn btn-primary" onclick="showScreen('documento')">Generar documento de atribución →</button>
+  </div>
+</div>
+
+
+<!-- ████████████████████████████████████████
+     SCREEN 7 – DOCUMENTO GENERADO
+████████████████████████████████████████ -->
+<div class="screen" id="screen-documento">
+  <div class="page-header">
+    <div>
+      <div class="page-title">Documento de atribución generado</div>
+      <div class="page-subtitle">DA-2025-0012 · Proyecto Torres del Sur · Mayo 2025</div>
+    </div>
+    <div class="flex gap-8">
+      <button class="btn btn-outline" onclick="showScreen('dashboard')">← Dashboard</button>
+      <button class="btn btn-primary" onclick="showScreen('bandeja')">📤 Enviar a partícipes</button>
+    </div>
+  </div>
+
+  <div class="alert-banner green">
+    ✅ Documento generado exitosamente. Está listo para ser enviado a los 3 partícipes del consorcio.
+  </div>
+
+  <div class="two-col">
+    <div class="doc-preview">
+      <div class="doc-preview-header">
+        <div>
+          <div class="doc-preview-title">DOCUMENTO DE ATRIBUCIÓN</div>
+          <div class="doc-preview-meta">DA-2025-0012 · Generado: 20/05/2025 a las 14:32</div>
+        </div>
+        <span class="badge badge-green" style="background:rgba(16,245,160,0.2);">Emitido</span>
+      </div>
+      <div class="doc-preview-body">
+        <div class="doc-field-row"><span class="doc-field-label">Consorcio</span><span class="doc-field-val">Proyecto Torres del Sur</span></div>
+        <div class="doc-field-row"><span class="doc-field-label">Operador</span><span class="doc-field-val">Constructora Rimac S.A.C.</span></div>
+        <div class="doc-field-row"><span class="doc-field-label">RUC operador</span><span class="doc-field-val mono text-cyan">20601234567</span></div>
+        <div class="doc-field-row"><span class="doc-field-label">Período de atribución</span><span class="doc-field-val">Mayo 2025</span></div>
+        <div class="doc-field-row"><span class="doc-field-label">Base imponible total</span><span class="doc-field-val mono">S/ 169,491.53</span></div>
+        <div class="doc-field-row"><span class="doc-field-label">IGV / Crédito fiscal</span><span class="doc-field-val mono">S/ 30,508.47</span></div>
+        <div class="doc-field-row"><span class="doc-field-label">Total atribuido</span><span class="doc-field-val mono fw-700 grad-text">S/ 200,000.00</span></div>
+        <div class="divider"></div>
+        <div style="font-size:12.5px;font-weight:700;color:var(--white);margin-bottom:10px;">Distribución por partícipe</div>
+        <div style="font-size:12.5px;color:var(--text-secondary);display:flex;flex-direction:column;gap:7px;">
+          <div class="flex items-center gap-8"><span style="flex:1">Constructora Rimac S.A.C. <span class="text-muted">(50%)</span></span><span class="mono text-white">S/ 100,000.00</span></div>
+          <div class="flex items-center gap-8"><span style="flex:1">Inversiones Andina S.A. <span class="text-muted">(30%)</span></span><span class="mono text-white">S/ 60,000.00</span></div>
+          <div class="flex items-center gap-8"><span style="flex:1">Grupo Inm. Lima S.A.C. <span class="text-muted">(20%)</span></span><span class="mono text-white">S/ 40,000.00</span></div>
+        </div>
+        <div class="divider"></div>
+        <div style="font-size:11px;color:var(--text-muted);line-height:1.7;">
+          Documento emitido de conformidad con el art. 69-A del TUO de la Ley del IGV e ISC y el numeral 10 del art. 8 del Reglamento. Válido como sustento tributario.
+        </div>
+      </div>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:14px;">
+      <div class="card">
+        <div class="card-body">
+          <div class="section-title mb-12">⬇ Acciones</div>
+          <div style="display:flex;flex-direction:column;gap:8px;">
+            <button class="btn btn-primary" style="justify-content:center;">📄 Descargar PDF</button>
+            <button class="btn btn-outline" style="justify-content:center;">💾 Guardar en expediente</button>
+            <button class="btn btn-outline" style="justify-content:center;" onclick="showScreen('bandeja')">📤 Enviar a partícipes</button>
+            <button class="btn btn-outline" style="justify-content:center;" onclick="showScreen('flujo')">↻ Generar nuevo periodo</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-body">
+          <div class="section-title mb-16">🕐 Trazabilidad</div>
+          <div class="timeline">
+            <div class="tl-item">
+              <div class="tl-dot green">✓</div>
+              <div class="tl-content"><div class="tl-title">Documento generado</div><div class="tl-time">20/05/2025 · 14:32 · por C. Ríos</div></div>
+            </div>
+            <div class="tl-item">
+              <div class="tl-dot violet">→</div>
+              <div class="tl-content"><div class="tl-title">Enviado a 3 partícipes</div><div class="tl-time">20/05/2025 · 14:35 · automático</div></div>
+            </div>
+            <div class="tl-item">
+              <div class="tl-dot green">✓</div>
+              <div class="tl-content"><div class="tl-title">Recibido: Constructora Rimac S.A.C.</div><div class="tl-time">20/05/2025 · 15:10</div></div>
+            </div>
+            <div class="tl-item">
+              <div class="tl-dot green">✓</div>
+              <div class="tl-content"><div class="tl-title">Recibido: Inversiones Andina S.A.</div><div class="tl-time">20/05/2025 · 16:02</div></div>
+            </div>
+            <div class="tl-item">
+              <div class="tl-dot amber">⏳</div>
+              <div class="tl-content"><div class="tl-title">Pendiente: Grupo Inm. Lima S.A.C.</div><div class="tl-time">Aún no confirma recepción</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ████████████████████████████████████████
+     SCREEN 8 – BANDEJA DEL PARTÍCIPE
+████████████████████████████████████████ -->
+<div class="screen" id="screen-bandeja">
+  <div class="page-header">
+    <div>
+      <div class="page-title">Bandeja del partícipe</div>
+      <div class="page-subtitle">Grupo Inmobiliario Lima S.A.C. · RUC 20612340987</div>
+    </div>
+    <button class="btn btn-outline" onclick="showScreen('dashboard')">← Dashboard</button>
+  </div>
+
+  <div class="nav-tabs">
+    <div class="nav-tab active">Pendientes (3)</div>
+    <div class="nav-tab">Recibidos</div>
+    <div class="nav-tab">Observados</div>
+    <div class="nav-tab">Todos</div>
+  </div>
+
+  <div class="alert-banner amber">
+    ⚠️ Tienes 3 documentos de atribución pendientes de revisión. Descárgalos y confírmalos para mantener tu registro tributario al día.
+  </div>
+
+  <div class="bandeja-card">
+    <div class="bandeja-period">
+      <div class="bandeja-period-month">MAY</div>
+      <div class="bandeja-period-year">2025</div>
+    </div>
+    <div class="bandeja-info">
+      <div class="bandeja-title">Proyecto Torres del Sur</div>
+      <div class="bandeja-sub">DA-2025-0012 · Emitido: 20/05/2025 · Operador: Constructora Rimac</div>
+      <div style="margin-top:6px;"><span class="badge badge-amber">Pendiente de revisión</span></div>
+    </div>
+    <div>
+      <div class="bandeja-amount-val">S/ 40,000.00</div>
+      <div class="bandeja-amount-sub">20% de S/ 200,000.00</div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:6px;margin-left:8px;">
+      <button class="btn btn-primary btn-sm">⬇ Descargar</button>
+      <button class="btn btn-outline btn-sm">✓ Confirmar</button>
+    </div>
+  </div>
+
+  <div class="bandeja-card">
+    <div class="bandeja-period" style="background:var(--bg-card-2);border:1px solid var(--border);">
+      <div class="bandeja-period-month" style="background:var(--grad);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">ABR</div>
+      <div class="bandeja-period-year">2025</div>
+    </div>
+    <div class="bandeja-info">
+      <div class="bandeja-title">Proyecto Torres del Sur</div>
+      <div class="bandeja-sub">DA-2025-0009 · Emitido: 15/04/2025 · Operador: Constructora Rimac</div>
+      <div style="margin-top:6px;"><span class="badge badge-amber">Pendiente de revisión</span></div>
+    </div>
+    <div>
+      <div class="bandeja-amount-val">S/ 32,500.00</div>
+      <div class="bandeja-amount-sub">20% de S/ 162,500.00</div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:6px;margin-left:8px;">
+      <button class="btn btn-primary btn-sm">⬇ Descargar</button>
+      <button class="btn btn-outline btn-sm">✓ Confirmar</button>
+    </div>
+  </div>
+
+  <div class="bandeja-card" style="border-color:rgba(244,63,94,0.3);">
+    <div class="bandeja-period" style="background:var(--red);">
+      <div class="bandeja-period-month">MAR</div>
+      <div class="bandeja-period-year">2025</div>
+    </div>
+    <div class="bandeja-info">
+      <div class="bandeja-title">Consorcio Vial Norte 2024</div>
+      <div class="bandeja-sub">DA-2025-0006 · Emitido: 14/03/2025 · Operador: Ing. Vial Perú</div>
+      <div style="margin-top:6px;"><span class="badge badge-red">Observado</span></div>
+    </div>
+    <div>
+      <div class="bandeja-amount-val">S/ 18,000.00</div>
+      <div class="bandeja-amount-sub">15% de S/ 120,000.00</div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:6px;margin-left:8px;">
+      <button class="btn btn-primary btn-sm">⬇ Descargar</button>
+      <button class="btn btn-danger btn-sm">Ver obs.</button>
+    </div>
+  </div>
+
+  <div class="card mt-20">
+    <div class="card-body">
+      <div class="section-title mb-12">💬 Observaciones — DA-2025-0006</div>
+      <div style="background:var(--red-dim);border:1px solid rgba(244,63,94,0.2);border-radius:var(--radius-sm);padding:14px 16px;margin-bottom:10px;">
+        <div style="font-size:12px;font-weight:700;color:var(--red);margin-bottom:3px;">Observación del partícipe · 16/03/2025</div>
+        <div style="font-size:13.5px;color:var(--text-secondary);">El monto de la base imponible no coincide con el comprobante F001-00045 en mi poder. Solicito corrección.</div>
+      </div>
+      <div style="background:rgba(139,92,246,0.1);border:1px solid rgba(139,92,246,0.2);border-radius:var(--radius-sm);padding:14px 16px;">
+        <div style="font-size:12px;font-weight:700;color:var(--magenta);margin-bottom:3px;">Respuesta del operador · 17/03/2025</div>
+        <div style="font-size:13.5px;color:var(--text-secondary);">Revisando el comprobante. Se emitirá documento de atribución rectificatorio en los próximos días.</div>
+      </div>
+      <div style="margin-top:14px;display:flex;gap:8px;">
+        <input class="search-input" placeholder="Escribe una observación..." style="background-image:none;padding-left:14px;">
+        <button class="btn btn-outline btn-sm" style="white-space:nowrap;">Enviar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ████████████████████████████████████████
+     SCREEN – DOCUMENTOS EMITIDOS
+████████████████████████████████████████ -->
+<div class="screen" id="screen-documentos">
+  <div class="page-header">
+    <div>
+      <div class="page-title">Documentos emitidos</div>
+      <div class="page-subtitle">Historial completo de atribuciones · 2025</div>
+    </div>
+    <button class="btn btn-outline" onclick="showScreen('dashboard')">← Dashboard</button>
+  </div>
+
+  <div class="search-row">
+    <input class="search-input" placeholder="Buscar por consorcio, período o número de documento...">
+    <button class="btn btn-outline btn-sm">Filtrar</button>
+    <button class="btn btn-outline btn-sm">Exportar Excel</button>
+  </div>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>N° documento</th>
+          <th>Consorcio</th>
+          <th>Período</th>
+          <th>Partícipes</th>
+          <th>Total atribuido</th>
+          <th>Emitido por</th>
+          <th>Fecha emisión</th>
+          <th>Estado</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="mono text-cyan">DA-2025-0012</td>
+          <td><div class="cell-main">Proyecto Torres del Sur</div></td>
+          <td class="text-muted">Mayo 2025</td>
+          <td class="text-muted">3</td>
+          <td class="mono fw-700 text-white">S/ 200,000.00</td>
+          <td class="text-muted">C. Ríos</td>
+          <td class="text-muted">20/05/2025</td>
+          <td><span class="badge badge-green">Emitido</span></td>
+          <td><button class="btn btn-ghost btn-sm" onclick="showScreen('documento')">Ver →</button></td>
+        </tr>
+        <tr>
+          <td class="mono text-cyan">DA-2025-0009</td>
+          <td><div class="cell-main">Proyecto Torres del Sur</div></td>
+          <td class="text-muted">Abril 2025</td>
+          <td class="text-muted">3</td>
+          <td class="mono fw-700 text-white">S/ 162,500.00</td>
+          <td class="text-muted">C. Ríos</td>
+          <td class="text-muted">15/04/2025</td>
+          <td><span class="badge badge-green">Emitido</span></td>
+          <td><button class="btn btn-ghost btn-sm" onclick="showScreen('documento')">Ver →</button></td>
+        </tr>
+        <tr>
+          <td class="mono text-cyan">DA-2025-0006</td>
+          <td><div class="cell-main">Consorcio Vial Norte 2024</div></td>
+          <td class="text-muted">Marzo 2025</td>
+          <td class="text-muted">4</td>
+          <td class="mono fw-700 text-white">S/ 120,000.00</td>
+          <td class="text-muted">J. Quispe</td>
+          <td class="text-muted">14/03/2025</td>
+          <td><span class="badge badge-red">Observado</span></td>
+          <td><button class="btn btn-ghost btn-sm" onclick="showScreen('documento')">Ver →</button></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+</div><!-- /main -->
+</div><!-- /app -->
+
+<script>
+  function showScreen(id) {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.querySelectorAll('.sidebar-item').forEach(i => i.classList.remove('active'));
+
+    const screen = document.getElementById('screen-' + id);
+    if (screen) screen.classList.add('active');
+
+    const map = { dashboard:0, ficha:1, bandeja:2, flujo:3, carga:3, calculo:3, validaciones:3, documento:4, documentos:4 };
+    const items = document.querySelectorAll('.sidebar-item');
+    const idx = map[id];
+    if (idx !== undefined && items[idx]) items[idx].classList.add('active');
+
+    const labels = {
+      dashboard: 'Dashboard',
+      ficha: 'Ficha del consorcio',
+      flujo: 'Nuevo documento · Paso 3',
+      carga: 'Carga de documentos',
+      calculo: 'Cálculo de atribución',
+      validaciones: 'Validaciones',
+      documento: 'Documento generado',
+      bandeja: 'Bandeja del partícipe',
+      documentos: 'Documentos emitidos',
+    };
+    document.getElementById('breadcrumb-text').textContent = labels[id] || 'Consorcios';
+    window.scrollTo(0,0);
+  }
+</script>
+</body>
+</html>
